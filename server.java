@@ -2,47 +2,35 @@ import java.io.*;
 import java.net.*;
 
 public class server {
+    private static final int PORT = Integer.parseInt(
+            System.getenv().getOrDefault("SERVER_PORT", "5000"));
 
     public static void main(String[] args) {
+        try (ServerSocket serverSocket = new ServerSocket(PORT)) {
+            System.out.println("Server listening on port " + PORT);
+            System.out.println("Waiting for one client...");
 
-        try {
-            // Create ServerSocket on port 5000
-            ServerSocket serverSocket = new ServerSocket(5000);
+            try (Socket socket = serverSocket.accept();
+                 BufferedReader input = new BufferedReader(
+                         new InputStreamReader(socket.getInputStream()));
+                 PrintWriter output = new PrintWriter(
+                         socket.getOutputStream(), true)) {
 
-            System.out.println("Server started...");
-            System.out.println("Waiting for client...");
+                System.out.println("Client connected: " + socket.getRemoteSocketAddress());
+                String message = input.readLine();
 
-            // Wait for client connection
-            Socket socket = serverSocket.accept();
+                if (message == null) {
+                    System.out.println("Client disconnected before sending a message.");
+                    return;
+                }
 
-            System.out.println("Client connected.");
-
-            // Input stream: receive message from client
-            BufferedReader input = new BufferedReader(
-                    new InputStreamReader(socket.getInputStream())
-            );
-
-            // Output stream: send message to client
-            PrintWriter output = new PrintWriter(
-                    socket.getOutputStream(), true
-            );
-
-            // Read message from client
-            String message = input.readLine();
-
-            System.out.println("Client says: " + message);
-
-            // Send response to client
-            output.println("Hello Client");
-
-            // Close connection
-            socket.close();
-            serverSocket.close();
+                System.out.println("Client says: " + message);
+                output.println("Hello Client");
+            }
 
             System.out.println("Connection closed.");
-
-        } catch (IOException e) {
-            System.out.println(e);
+        } catch (IOException | NumberFormatException e) {
+            System.err.println("Server failed: " + e.getMessage());
         }
     }
 }
